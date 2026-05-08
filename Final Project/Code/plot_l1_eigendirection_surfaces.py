@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import plotly.graph_objects as go
+from scipy import interpolate
 
 from code_manifold2_python import (
     compute_periodic_orbit,
@@ -150,11 +151,41 @@ def project(states, projection=PROJECTION):
     return tuple(states[..., STATE_INDEX[name]] for name in projection)
 
 
-def eigendirection_surface(base_states, directions, local_width, offset_count):
-    offsets = np.linspace(-local_width, local_width, offset_count)
-    surface_states = base_states[None, :, :] + offsets[:, None, None] * directions[None, :, :]
-    surfacecolor = np.tile(np.abs(offsets / local_width)[:, None], (1, base_states.shape[0]))
-    return (*project(surface_states), surfacecolor)
+def smooth_closed_orbit(xsorb, point_count):
+    orbit_states = xsorb.T
+    orbit_xyz = np.column_stack(project(orbit_states))
+
+    if np.linalg.norm(orbit_xyz[0] - orbit_xyz[-1]) > 1e-10:
+        orbit_xyz = np.vstack((orbit_xyz, orbit_xyz[0]))
+    else:
+        orbit_xyz[-1] = orbit_xyz[0]
+
+    segment_lengths = np.linalg.norm(np.diff(orbit_xyz, axis=0), axis=1)
+    arclength = np.insert(np.cumsum(segment_lengths), 0, 0)
+    keep = np.concatenate(([True], np.diff(arclength) > 1e-12))
+    orbit_xyz = orbit_xyz[keep]
+    arclength = arclength[keep]
+
+    splines = [
+        interpolate.CubicSpline(arclength, orbit_xyz[:, i], bc_type="periodic")
+        for i in range(orbit_xyz.shape[1])
+    ]
+    smooth_arclength = np.linspace(0, arclength[-1], point_count)
+    return tuple(spline(smooth_arclength) for spline in splines)
+
+
+def eigendirection_surface(base_states, directions, local_width, offset_count, center_gap_fraction):
+    center_gap = center_gap_fraction * local_width
+    negative_offsets = np.linspace(-local_width, -center_gap, offset_count)
+    positive_offsets = np.linspace(center_gap, local_width, offset_count)
+    surfaces = []
+
+    for offsets in (negative_offsets, positive_offsets):
+        surface_states = base_states[None, :, :] + offsets[:, None, None] * directions[None, :, :]
+        surfacecolor = np.tile(np.abs(offsets / local_width)[:, None], (1, base_states.shape[0]))
+        surfaces.append((*project(surface_states), surfacecolor))
+
+    return surfaces
 
 
 def orbit_radius(xsorb, l1_x):
@@ -187,6 +218,18 @@ def plot_config(args):
             "scale": args.export_scale,
         }
     }
+
+
+def axis_layout(title, show_axes):
+    return dict(
+        title=title if show_axes else "",
+        showgrid=show_axes,
+        showticklabels=show_axes,
+        showbackground=False,
+        zeroline=show_axes,
+        showline=show_axes,
+        ticks="outside" if show_axes else "",
+    )
 
 
 def add_surface(fig, x, y, z, surfacecolor, colorscale, opacity):
@@ -247,17 +290,19 @@ def build_figure(args):
     if local_width is None:
         local_width = args.width_fraction * orbit_radius(xsorb, L1_x)
 
-    stable_x, stable_y, stable_z, stable_color = eigendirection_surface(
+    stable_surfaces = eigendirection_surface(
         base_states,
         stable_dirs,
         local_width,
         args.offset_count,
+        args.center_gap_fraction,
     )
-    unstable_x, unstable_y, unstable_z, unstable_color = eigendirection_surface(
+    unstable_surfaces = eigendirection_surface(
         base_states,
         unstable_dirs,
         local_width,
         args.offset_count,
+        args.center_gap_fraction,
     )
 
     fig = go.Figure()
@@ -271,10 +316,12 @@ def build_figure(args):
         [0.42, "#b9df57"],
         [1.00, "#238443"],
     ]
-    add_surface(fig, unstable_x, unstable_y, unstable_z, unstable_color, unstable_colorscale, 0.78)
-    add_surface(fig, stable_x, stable_y, stable_z, stable_color, stable_colorscale, 0.72)
+    for unstable_x, unstable_y, unstable_z, unstable_color in unstable_surfaces:
+        add_surface(fig, unstable_x, unstable_y, unstable_z, unstable_color, unstable_colorscale, 0.78)
+    for stable_x, stable_y, stable_z, stable_color in stable_surfaces:
+        add_surface(fig, stable_x, stable_y, stable_z, stable_color, stable_colorscale, 0.72)
 
-    orbit_x, orbit_y, orbit_z = project(xsorb.T)
+    orbit_x, orbit_y, orbit_z = smooth_closed_orbit(xsorb, args.orbit_plot_points)
     fig.add_trace(
         go.Scatter3d(
             x=orbit_x,
@@ -327,10 +374,10 @@ def build_figure(args):
         showlegend=False,
         scene=dict(
             aspectmode="data",
-            xaxis=dict(title="", showgrid=False, showticklabels=False, showbackground=False, zeroline=False),
-            yaxis=dict(title="", showgrid=False, showticklabels=False, showbackground=False, zeroline=False),
-            zaxis=dict(title="", showgrid=False, showticklabels=False, showbackground=False, zeroline=False),
-            camera=dict(eye=dict(x=1.55, y=-1.8, z=1.08)),
+            xaxis=axis_layout(PROJECTION[0], args.show_axes),
+            yaxis=axis_layout(PROJECTION[1], args.show_axes),
+            zaxis=axis_layout(PROJECTION[2], args.show_axes),
+            camera=dict(eye=dict(x=0.0, y=-2.25, z=0.82), up=dict(x=0, y=0, z=1)),
             bgcolor="rgba(0,0,0,0)",
         ),
         paper_bgcolor="white",
@@ -345,6 +392,8 @@ def parse_args():
     parser.add_argument("--steps", type=int, default=2**8)
     parser.add_argument("--phase-count", type=int, default=72)
     parser.add_argument("--offset-count", type=int, default=23)
+    parser.add_argument("--center-gap-fraction", type=float, default=0.01)
+    parser.add_argument("--orbit-plot-points", type=int, default=1200)
     parser.add_argument("--visible-fraction", type=float, default=0.75)
     parser.add_argument("--local-width", type=float, default=None)
     parser.add_argument("--width-fraction", type=float, default=0.9)
@@ -353,7 +402,8 @@ def parse_args():
     parser.add_argument("--period-guess", type=float, default=2.65)
     parser.add_argument("--width", type=int, default=1800)
     parser.add_argument("--height", type=int, default=1400)
-    parser.add_argument("--export-scale", type=int, default=4)
+    parser.add_argument("--export-scale", type=int, default=6)
+    parser.add_argument("--show-axes", action="store_true")
     parser.add_argument("--html", type=Path, default=None)
     return parser.parse_args()
 
