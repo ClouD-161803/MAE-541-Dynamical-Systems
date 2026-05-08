@@ -464,101 +464,103 @@ def compute_manifolds(xsorb, Torb, Nsteps, Gm, GM, xsecondary, xprimary, omega, 
     plot_manifold_tubes(ax, manifold_data)
 
 
-G = 1
-m = 0.025
-M = 1 - m
-R = 1
+def run_demo():
+    G = 1
+    m = 0.025
+    M = 1 - m
+    R = 1
 
-xbary = (M * 0 + m * R) / (m + M)
-xsecondary = R - xbary
-xprimary = -xbary
+    xbary = (M * 0 + m * R) / (m + M)
+    xsecondary = R - xbary
+    xprimary = -xbary
 
-omega = np.sqrt(G * M / (xsecondary * (xsecondary - xprimary) ** 2))
-T_orbital = 2 * np.pi / omega
-Gm = G * m
-GM = G * M
+    omega = np.sqrt(G * M / (xsecondary * (xsecondary - xprimary) ** 2))
+    Gm = G * m
+    GM = G * M
 
-Vbarrier = -1.625
+    Vbarrier = -1.625
 
-fig, ax = plt.subplots(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(8, 8))
 
-scatter_point(ax, xprimary, 0, size=300, color=[0.75, 0.75, 0.75])
-scatter_point(ax, xsecondary, 0, size=100, color=[0.75, 0.75, 0.75])
-ax.set_aspect('equal')
-ax.set_xlim(tuple(np.array([-1, 1]) * 1.5))
-ax.set_ylim(tuple(np.array([-1, 1]) * 1.5))
+    scatter_point(ax, xprimary, 0, size=300, color=[0.75, 0.75, 0.75])
+    scatter_point(ax, xsecondary, 0, size=100, color=[0.75, 0.75, 0.75])
+    ax.set_aspect('equal')
+    ax.set_xlim(tuple(np.array([-1, 1]) * 1.5))
+    ax.set_ylim(tuple(np.array([-1, 1]) * 1.5))
 
-xx, yy = np.meshgrid(np.arange(-2, 2.01, 0.01), np.arange(-2, 2.01, 0.01))
-Vc = -0.5 * (xx**2 + yy**2) * omega**2
-Vg = -G * m / np.sqrt((xx - xsecondary)**2 + (yy - 0)**2) - G * M / np.sqrt((xx - xprimary)**2 + (yy - 0)**2)
-Veff = Vc + Vg
-ax.contour(xx, yy, Veff, [Vbarrier])
+    xx, yy = np.meshgrid(np.arange(-2, 2.01, 0.01), np.arange(-2, 2.01, 0.01))
+    Vc = -0.5 * (xx**2 + yy**2) * omega**2
+    Vg = -G * m / np.sqrt((xx - xsecondary)**2 + (yy - 0)**2) - G * M / np.sqrt((xx - xprimary)**2 + (yy - 0)**2)
+    Veff = Vc + Vg
+    ax.contour(xx, yy, Veff, [Vbarrier])
 
-y = 0
-f = lambda x: -1 * x * omega**2 - G * m * -1 / 2 * ((x - xsecondary)**2 + y**2)**(-3/2) * 2 * (x - xsecondary) - G * M * -1 / 2 * ((x - xprimary)**2 + y**2)**(-3/2) * 2 * (x - xprimary)
+    y = 0
+    f = lambda x: -1 * x * omega**2 - G * m * -1 / 2 * ((x - xsecondary)**2 + y**2)**(-3/2) * 2 * (x - xsecondary) - G * M * -1 / 2 * ((x - xprimary)**2 + y**2)**(-3/2) * 2 * (x - xprimary)
 
-L1_x = find_lagrange_point(0.78, f)
-L2_x = find_lagrange_point(1.19, f)
-L3_x = find_lagrange_point(-1, f)
-L4 = R * np.array([(xsecondary + xprimary) / 2, np.sqrt(3) / 2])
-L5 = R * np.array([(xsecondary + xprimary) / 2, -np.sqrt(3) / 2])
+    L1_x = find_lagrange_point(0.78, f)
+    L2_x = find_lagrange_point(1.19, f)
+    L3_x = find_lagrange_point(-1, f)
+    L4 = R * np.array([(xsecondary + xprimary) / 2, np.sqrt(3) / 2])
+    L5 = R * np.array([(xsecondary + xprimary) / 2, -np.sqrt(3) / 2])
 
-scatter_point(ax, L1_x, 0, size=100, color=[0, 0, 0])
-scatter_point(ax, L2_x, 0, size=100, color=[0, 0, 0])
-scatter_point(ax, L3_x, 0, size=100, color=[0, 0, 0])
-scatter_point(ax, L4[0], L4[1], size=100, color=[0, 0, 0])
-scatter_point(ax, L5[0], L5[1], size=100, color=[0, 0, 0])
+    scatter_point(ax, L1_x, 0, size=100, color=[0, 0, 0])
+    scatter_point(ax, L2_x, 0, size=100, color=[0, 0, 0])
+    scatter_point(ax, L3_x, 0, size=100, color=[0, 0, 0])
+    scatter_point(ax, L4[0], L4[1], size=100, color=[0, 0, 0])
+    scatter_point(ax, L5[0], L5[1], size=100, color=[0, 0, 0])
 
-L1 = [L1_x, 0]
-L2 = [L2_x, 0]
-L3 = [L3_x, 0]
+    L1 = [L1_x, 0]
 
-Pinit = np.array([0.77, 0, 0, 0.1551])
-Nsteps = 2**8
-T = 2.65
+    Pinit = np.array([0.77, 0, 0, 0.1551])
+    Nsteps = 2**8
+    T = 2.65
 
-xs_ref = compute_initial_reference_trajectory(Pinit, T, Nsteps, Gm, GM, xsecondary, xprimary, omega, ax)
-ax.set_xlim(tuple(np.array([-1, 1]) * 0.25 + L1[0]))
-ax.set_ylim(tuple(np.array([-1, 1]) * 0.25))
+    compute_initial_reference_trajectory(Pinit, T, Nsteps, Gm, GM, xsecondary, xprimary, omega, ax)
+    ax.set_xlim(tuple(np.array([-1, 1]) * 0.25 + L1[0]))
+    ax.set_ylim(tuple(np.array([-1, 1]) * 0.25))
 
-P_periodic, T_periodic = find_periodic_orbit(Pinit, T, Nsteps, Gm, GM, xsecondary, xprimary, omega, ax)
+    P_periodic, T_periodic = find_periodic_orbit(Pinit, T, Nsteps, Gm, GM, xsecondary, xprimary, omega, ax)
 
-Ps, Ts, CJs, initx = continue_periodic_orbits(Pinit.copy(), T_periodic, 1e-4, 2000, Nsteps, Gm, GM, xsecondary, xprimary, omega, ax)
+    Ps, Ts, CJs, initx = continue_periodic_orbits(Pinit.copy(), T_periodic, 1e-4, 2000, Nsteps, Gm, GM, xsecondary, xprimary, omega, ax)
 
-Popt, Topt, xsorb = find_energy_matched_orbit(Ps, Ts, CJs, Vbarrier, Nsteps, Gm, GM, xsecondary, xprimary, omega, ax)
+    Popt, Topt, xsorb = find_energy_matched_orbit(Ps, Ts, CJs, Vbarrier, Nsteps, Gm, GM, xsecondary, xprimary, omega, ax)
 
-compute_manifolds(xsorb, Topt, Nsteps, Gm, GM, xsecondary, xprimary, omega, ax)
+    compute_manifolds(xsorb, Topt, Nsteps, Gm, GM, xsecondary, xprimary, omega, ax)
 
-x_shoot = np.array([0.65, -0.15])
-angleshoot = 0.875
-vshoot = 1
-dx = vshoot * np.array([np.cos(angleshoot), np.sin(angleshoot)])
-CJlim = -2 * Vbarrier
-CJpot = omega**2 * (x_shoot[0]**2 + x_shoot[1]**2) + 2 * (Gm / np.sqrt((x_shoot[0] - xsecondary)**2 + (x_shoot[1] - 0)**2) + GM / np.sqrt((x_shoot[0] - xprimary)**2 + (x_shoot[1] - 0)**2))
-deltaJ = CJpot - CJlim
+    x_shoot = np.array([0.65, -0.15])
+    angleshoot = 0.875
+    vshoot = 1
+    dx = vshoot * np.array([np.cos(angleshoot), np.sin(angleshoot)])
+    CJlim = -2 * Vbarrier
+    CJpot = omega**2 * (x_shoot[0]**2 + x_shoot[1]**2) + 2 * (Gm / np.sqrt((x_shoot[0] - xsecondary)**2 + (x_shoot[1] - 0)**2) + GM / np.sqrt((x_shoot[0] - xprimary)**2 + (x_shoot[1] - 0)**2))
+    deltaJ = CJpot - CJlim
 
-dx2 = dx**2
-dx2 = dx2[0] + dx2[1]
-dxfac = (deltaJ / dx2)**0.5
-dx = dx * dxfac
-P_shoot = np.concatenate((x_shoot, dx))
+    dx2 = dx**2
+    dx2 = dx2[0] + dx2[1]
+    dxfac = (deltaJ / dx2)**0.5
+    dx = dx * dxfac
+    P_shoot = np.concatenate((x_shoot, dx))
 
-T_shoot = 15
-dt_shoot = 1e-3
-ts_shoot = np.arange(0, T_shoot, dt_shoot)
-xs_shoot = np.nan * np.ones((4, len(ts_shoot)))
-xs_shoot[:, 0] = P_shoot[0:4]
-P_curr = P_shoot.copy()
+    T_shoot = 15
+    dt_shoot = 1e-3
+    ts_shoot = np.arange(0, T_shoot, dt_shoot)
+    xs_shoot = np.nan * np.ones((4, len(ts_shoot)))
+    xs_shoot[:, 0] = P_shoot[0:4]
+    P_curr = P_shoot.copy()
 
-for i, t in enumerate(ts_shoot[1:], 1):
-    dPdt = dPdt_rk8(t, P_curr, Gm, GM, xsecondary, xprimary, omega, dt_shoot)
-    P_curr = P_curr + dPdt * dt_shoot
-    xs_shoot[:, i] = P_curr[0:4]
+    for i, t in enumerate(ts_shoot[1:], 1):
+        dPdt = dPdt_rk8(t, P_curr, Gm, GM, xsecondary, xprimary, omega, dt_shoot)
+        P_curr = P_curr + dPdt * dt_shoot
+        xs_shoot[:, i] = P_curr[0:4]
 
-plot_trajectory(ax, xs_shoot, color=[0, 0, 0], linewidth=1)
-scatter_point(ax, xs_shoot[0, -1], xs_shoot[1, -1], size=200, color=[0, 0, 0])
+    plot_trajectory(ax, xs_shoot, color=[0, 0, 0], linewidth=1)
+    scatter_point(ax, xs_shoot[0, -1], xs_shoot[1, -1], size=200, color=[0, 0, 0])
 
-ax.set_xlim(tuple(np.array([-1, 1]) * 0.25 + L1[0]))
-ax.set_ylim(tuple(np.array([-1, 1]) * 0.25))
+    ax.set_xlim(tuple(np.array([-1, 1]) * 0.25 + L1[0]))
+    ax.set_ylim(tuple(np.array([-1, 1]) * 0.25))
 
-plt.show()
+    plt.show()
+
+
+if __name__ == "__main__":
+    run_demo()
