@@ -248,7 +248,7 @@ def compute_periodic_orbit(Pinit, T, Nsteps, Gm, GM, xsecondary, xprimary, omega
     return P, T_opt, xs
 
 
-def compute_periodic_family(Pinit, T, ds, max_iterations, Nsteps, Gm, GM, xsecondary, xprimary, omega):
+def compute_periodic_family(Pinit, T, ds, max_iterations, Nsteps, Gm, GM, xsecondary, xprimary, omega, min_x=0.76):
     Ps = np.nan * np.zeros((4, max_iterations))
     Ts = np.nan * np.zeros(max_iterations)
     CJs = np.nan * np.zeros(max_iterations)
@@ -256,7 +256,7 @@ def compute_periodic_family(Pinit, T, ds, max_iterations, Nsteps, Gm, GM, xsecon
     all_xs = []
 
     ii = 0
-    while Pinit[0] > 0.76:
+    while Pinit[0] > min_x:
         if ii >= max_iterations:
             break
 
@@ -292,7 +292,12 @@ def compute_periodic_family(Pinit, T, ds, max_iterations, Nsteps, Gm, GM, xsecon
 
 def compute_energy_matched_orbit(Ps, Ts, CJs, Vbarrier, Nsteps, Gm, GM, xsecondary, xprimary, omega):
     crit = CJs + 2 * Vbarrier
-    Iorbit = np.where(np.diff(np.sign(crit)))[0][0]
+    crossing_indices = np.where(np.diff(np.sign(crit)))[0]
+
+    if len(crossing_indices) == 0:
+        raise ValueError(f"No energy crossing found. Vbarrier={Vbarrier:.4f}, CJ range=[{np.min(CJs):.4f}, {np.max(CJs):.4f}]")
+
+    Iorbit = crossing_indices[0]
     Pcross = Ps[:, Iorbit]
     Tcross = Ts[Iorbit]
 
