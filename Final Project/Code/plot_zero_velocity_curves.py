@@ -116,6 +116,8 @@ figures_dir.mkdir(parents=True, exist_ok=True)
 
 C = -2 * E
 output_path = figures_dir / f'hill_curve_{C:.2f}.png'
+html_output_path = figures_dir / f'hill_curve_{C:.2f}.html'
+fig.write_html(str(html_output_path), include_plotlyjs='cdn')
 fig.write_image(str(output_path), scale=6)
 
 img = Image.open(output_path).convert('RGB')
